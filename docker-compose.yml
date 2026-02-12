@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cotafacil-postgres
+    environment:
+      POSTGRES_DB: cotafacil
+      POSTGRES_USER: cotafacil
+      POSTGRES_PASSWORD: cotafacil123
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cotafacil -d cotafacil"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api2:
+    build: ./teste.pratico.api2
+    container_name: cotafacil-api2
+    environment:
+      SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cotafacil
+      SPRING_DATASOURCE_USERNAME: cotafacil
+      SPRING_DATASOURCE_PASSWORD: cotafacil123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api1:
+    build: ./teste.pratico.api1
+    container_name: cotafacil-api1
+    environment:
+      SERVER_PORT: 8080
+      API2_BASE_URL: http://api2:8081
+    depends_on:
+      - api2
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
