@@ -1,0 +1,17 @@
+name: Docker - Build (no push)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API1 image
+        run: docker build -t api1:ci ./teste.pratico.api1  # ajuste pasta
+
+      - name: Build API2 image
+        run: docker build -t api2:ci ./teste.pratico.api2  # ajuste pasta
