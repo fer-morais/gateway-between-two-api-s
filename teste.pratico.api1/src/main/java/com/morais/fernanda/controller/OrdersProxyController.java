@@ -32,7 +32,7 @@ public class OrdersProxyController {
         return request.getHeader(HttpHeaders.AUTHORIZATION);
     }
 
-  /*  @Operation(summary = "Listar todos os pedidos (com paginação)")
+    @Operation(summary = "Listar todos os pedidos (com paginação)")
     @GetMapping
     public ResponseEntity<String> list(@RequestParam(defaultValue = "0") int page,
                                        @RequestParam(defaultValue = "10") int size,
@@ -41,8 +41,8 @@ public class OrdersProxyController {
         String path = "/api/orders?page=" + page + "&size=" + size;
         return api2Client.forward(HttpMethod.GET, path, bearer(request), null, request);
     }
-*/
-    @Operation(summary = "Listar todos os pedidos (com paginação)")
+
+  /*  @Operation(summary = "Listar todos os pedidos (com paginação)")
     @GetMapping
     public ResponseEntity<String> list(@ParameterObject Pageable pageable,
                                        @Parameter(hidden = true) HttpServletRequest request) {
@@ -52,7 +52,7 @@ public class OrdersProxyController {
             path += "?" + query;
         }
         return api2Client.forward(HttpMethod.GET, path, bearer(request), null, request);
-    }
+    }*/
 
     @Operation(summary = "Buscar pedido por ID")
     @GetMapping("/{id}")

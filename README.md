@@ -1,269 +1,296 @@
-# CotaFácil - Technical Challenge
+# Sistema de Pedidos Distribuído com Spring Boot e Microsserviços
 
-This repository contains the source code for a technical challenge that demonstrates a microservices-based architecture using Spring Boot. The system consists of two main services: an API Gateway for handling authentication and request routing, and an Orders Service for managing order-related operations.
+Este repositório contém a implementação de uma arquitetura de microsserviços para um sistema de gestão de pedidos, desenvolvido como parte de um desafio técnico. O projeto demonstra o uso de práticas avançadas de engenharia de software, incluindo segurança com JWT, padrão API Gateway, comunicação entre serviços e containerização.
 
-## 1. Project Overview
+## 1. Visão Geral e Arquitetura
 
-This project implements a secure and scalable backend system for managing orders. It is designed to showcase best practices in modern Java development, including microservices, JWT-based authentication, and containerization.
+O sistema é composto por dois serviços principais que se comunicam de forma síncrona:
 
-The architecture was designed to separate concerns, making the system more modular, scalable, and maintainable. The API Gateway acts as a single entry point for all clients, providing a centralized location for authentication, logging, and routing. The Orders Service is a self-contained microservice responsible for all business logic related to orders.
+### **API 1: Gateway & Auth Service**
+Atua como o ponto de entrada único (Edge Service) para o sistema.
+- **Responsabilidades**: Autenticação, emissão de tokens JWT, roteamento de requisições (Proxy Reverso) e documentação centralizada.
+- **Padrão Proxy**: Intercepta requisições para `/api/orders/**`, valida o token JWT e encaminha a chamada para a API 2, retornando a resposta original (incluindo status HTTP e erros) para o cliente.
 
-## 2. Architecture Explanation
+### **API 2: Orders Service**
+Serviço de domínio focado na gestão de pedidos.
+- **Responsabilidades**: CRUD de pedidos e itens, regras de negócio, persistência de dados e validação.
+- **Isolamento**: Não é exposta diretamente à internet em produção; é acessada apenas através da API 1.
 
-The architecture follows a classic microservices pattern, with a gateway handling cross-cutting concerns and a dedicated service for business logic.
+---
 
-```
-   Client
-      ↓
-+---------------------------------+
-|   API Gateway (Port 8080)       |
-|   - JWT Authentication          |
-|   - Request Routing/Proxying    |
-+---------------------------------+
-      ↓
-+---------------------------------+
-|   Orders Service (Port 8081)    |
-|   - Business Logic              |
-|   - Data Persistence            |
-+---------------------------------+
-      ↓
-+---------------------------------+
-|   PostgreSQL Database           |
-+---------------------------------+
-```
+## 2. Tecnologias Utilizadas
 
-### API 1: API Gateway (Authentication & Routing)
+- **Java 21** (LTS)
+- **Spring Boot 3.x**
+- **Spring Security 6** (Autenticação Stateless via JWT)
+- **JJWT 0.12.6** (Geração e validação de tokens)
+- **Spring Data JPA** & **Hibernate**
+- **PostgreSQL 16**
+- **Docker** & **Docker Compose**
+- **SpringDoc OpenAPI** (Swagger UI)
+- **Maven** (Gerenciamento de dependências)
+- **JUnit 5** & **Mockito** (Testes unitários e de integração)
 
--   **Responsibilities**:
-    -   Authenticates users via a `/auth/login` endpoint, issuing a JWT upon success.
-    -   Validates JWTs on incoming requests to protected endpoints.
-    -   Forwards requests for `/api/orders/**` to the Orders Service.
-    -   Acts as the single point of entry to the system, simplifying the client-side and enhancing security.
+---
 
-### API 2: Orders Service
+## 3. Como Executar o Projeto
 
--   **Responsibilities**:
-    -   Manages all CRUD (Create, Read, Update, Delete) operations for orders.
-    -   Contains the core business logic.
-    -   Interacts with the PostgreSQL database for data persistence.
+### Pré-requisitos
+- Docker e Docker Compose instalados.
 
-### JWT Flow
+### Passo a Passo (Docker Compose)
 
-1.  The client sends a `POST` request to `/auth/login` with a username and password.
-2.  The API Gateway validates the credentials and, if successful, generates a JWT with a 1-hour expiration.
-3.  The client includes this JWT in the `Authorization` header for all subsequent requests to protected endpoints.
-4.  The API Gateway intercepts these requests, validates the JWT, and, if valid, forwards the request to the appropriate service.
+A maneira mais simples de executar o ambiente completo (Banco de Dados + API 1 + API 2) é utilizando o Docker Compose.
 
-### Security Strategy
-
-The security is based on a stateless authentication mechanism using JWT. The gateway is the first line of defense, ensuring that no unauthenticated requests reach the core business services.
-
-## 3. Technologies Used
-
-![Java](https://img.shields.io/badge/Java-17+-orange.svg)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)
-![Spring Security](https://img.shields.io/badge/Spring%20Security-6.x-blue.svg)
-![JWT](https://img.shields.io/badge/JWT-Authentication-red.svg)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)
-![Maven](https://img.shields.io/badge/Maven-4.0-red.svg)
-
-## 4. Project Structure
-
-The project is divided into two main modules:
-
--   `teste.pratico.api1`: The API Gateway and Authentication service.
--   `teste.pratico.api2`: The Orders microservice.
-
-### `teste.pratico.api1` (API Gateway)
-
--   `controller`: Contains the `AuthController` for handling login requests.
--   `security`: Holds the JWT generation, validation, and filter logic.
--   `config`: Includes `SecurityConfig` for defining security rules and the `RouteLocator` for proxying.
--   `client`: Feign client for communicating with the Orders Service.
--   `dto`: Data Transfer Objects for authentication requests/responses.
--   `exception`: Custom exception handling classes.
-
-### `teste.pratico.api2` (Orders Service)
-
--   `controller`: `PedidoController` with CRUD endpoints for orders.
--   `service`: `PedidoService` containing the business logic for managing orders.
--   `repository`: `PedidoRepository` for database interactions using Spring Data JPA.
--   `model`: The `Pedido` entity that maps to the database table.
--   `dto`: Data Transfer Objects for order creation and updates.
--   `security`: Basic security configuration.
--   `exception`: Custom exception handling classes.
-
-## 5. How to Run the Project
-
-### Option 1 – Run Locally (Without Docker)
-
-**Requirements:**
-
--   Java 17+
--   Maven 3.8+
--   PostgreSQL running on `localhost:5432`
-
-**Instructions:**
-
-1.  **Database Setup**: Create a PostgreSQL database named `cotafacil` with a user `cotafacil` and password `cotafacil123`.
-2.  **Build the Projects**: Open a terminal in the root directory and run:
+1.  **Clone o repositório e entre na pasta:**
     ```bash
-    mvn clean install
+    git clone <url-do-repositorio>
+    cd teste.pratico(CotaFacil)
     ```
-3.  **Run the Applications**:
-    -   Run the Orders Service (API 2):
-        ```bash
-        cd teste.pratico.api2
-        mvn spring-boot:run
-        ```
-    -   In a new terminal, run the API Gateway (API 1):
-        ```bash
-        cd teste.pratico.api1
-        mvn spring-boot:run
-        ```
 
-### Option 2 – Run with Docker
-
-**Requirements:**
-
--   Docker
--   Docker Compose
-
-**Instructions:**
-
-1.  **Build and Run**: Open a terminal in the root directory and run:
+2.  **Suba os contêineres:**
     ```bash
     docker-compose up --build
     ```
-2.  **Explanation**:
-    -   This command builds the Docker images for both `api1` and `api2`.
-    -   It starts three containers: `cotafacil-postgres`, `cotafacil-api2`, and `cotafacil-api1`.
-    -   The API Gateway will be accessible at `http://localhost:8080`.
-    -   The services communicate with each other over the internal Docker network.
+    *O build pode levar alguns minutos na primeira execução.*
 
-## 6. Authentication Flow
-
-1.  **Login**: The user sends a `POST` request to `/auth/login` with their credentials.
-2.  **Token Generation**: If the credentials are valid, the server responds with a JSON Web Token (JWT).
-3.  **Authorization**: For all subsequent requests to protected endpoints (e.g., `/api/orders`), the user must include the JWT in the `Authorization` header with the format `Bearer <token>`.
-4.  **Validation**: The API Gateway validates the token. If valid, the request is forwarded to the Orders Service. If invalid or missing, a `401 Unauthorized` or `403 Forbidden` response is returned.
-
-**Example Request:**
-
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "username": "user",
-  "password": "password"
-}
-```
-
-**Example Response:**
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIiwiaWF0IjoxNj..."
-}
-```
-
-## 7. Available Endpoints
-
-### API 1 (Gateway)
-
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/auth/login` | Authenticates a user and returns a JWT. | No |
-| `*` | `/api/orders/**` | Proxies requests to the Orders Service. | Yes |
-
-### API 2 (Orders Service)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/orders` | Lists all orders (paginated). |
-| `GET` | `/api/orders/{id}` | Retrieves a specific order by ID. |
-| `POST` | `/api/orders` | Creates a new order. |
-| `PUT` | `/api/orders/{id}` | Updates an existing order. |
-| `DELETE` | `/api/orders/{id}` | Deletes an order. |
-| `GET` | `/api/orders/{id}/items` | Lists items for a specific order. |
-| `POST` | `/api/orders/{id}/items` | Adds an item to a specific order. |
-
-**Example Order Payload (POST /api/orders):**
-
-```json
-{
-  "customerName": "John Doe",
-  "customerEmail": "john.doe@example.com",
-  "status": "PENDING",
-  "items": [
-    {
-      "productName": "Laptop",
-      "quantity": 1,
-      "unitPrice": 1500.00
-    }
-  ]
-}
-```
-
-## 8. Security Implementation
-
--   **Stateless Session**: The application uses `SessionCreationPolicy.STATELESS`, meaning no session state is stored on the server. Each request must be authenticated independently via the JWT.
--   **JWT Filter**: A custom filter intercepts requests to check for the presence and validity of the JWT in the `Authorization` header.
--   **Token Expiration**: Tokens are configured to expire after 1 hour, reducing the window of opportunity for misused tokens.
--   **CORS**: Cross-Origin Resource Sharing is configured to allow requests from allowed origins (configurable).
-
-## 9. Testing with Postman
-
-1.  **Login**:
-    -   Create a `POST` request to `http://localhost:8080/auth/login`.
-    -   Set the body to raw JSON with `username` and `password`.
-    -   Send the request and copy the `token` from the response.
-
-2.  **Access Protected Endpoint**:
-    -   Create a `GET` request to `http://localhost:8080/api/orders`.
-    -   Go to the **Authorization** tab.
-    -   Select **Bearer Token**.
-    -   Paste the token you copied.
-    -   Send the request.
-
-**Troubleshooting:**
--   **401 Unauthorized**: The token is missing, invalid, or expired. Log in again to get a new token.
--   **403 Forbidden**: The token is valid, but the user does not have permission to access the resource (if role-based access is implemented).
-
-## 10. Database Configuration
-
-The project uses PostgreSQL for data persistence.
-
--   **Docker**: The `docker-compose.yml` file configures a PostgreSQL container with the database name `cotafacil`.
--   **Configuration**: The `application.properties` (or `application.yml`) file in `api2` contains the connection details:
-    ```properties
-    spring.datasource.url=jdbc:postgresql://postgres:5432/cotafacil
-    spring.datasource.username=cotafacil
-    spring.datasource.password=cotafacil123
-    ```
-
-## 11. Design Decisions
-
--   **Gateway Separation**: Separating the Gateway from the Orders Service allows for independent scaling. The Gateway can handle high traffic and authentication load without impacting the business logic service.
--   **JWT**: JSON Web Tokens were chosen for their stateless nature, which is ideal for microservices. It avoids the need for a centralized session store (like Redis) for this scale of application.
--   **Docker**: Containerization ensures consistency across different development and deployment environments.
-
-## 12. Possible Improvements
-
--   **Refresh Tokens**: Implement a refresh token mechanism to allow users to stay logged in without re-entering credentials frequently.
--   **Role-Based Access Control (RBAC)**: Add roles (e.g., ADMIN, USER) to restrict access to certain endpoints (e.g., only ADMINs can delete orders).
--   **API Rate Limiting**: Implement rate limiting in the Gateway to prevent abuse.
--   **Centralized Logging**: Integrate with a stack like ELK (Elasticsearch, Logstash, Kibana) for better monitoring.
--   **Swagger/OpenAPI**: Add automated API documentation using Swagger UI.
-
-## 13. Author
-
-**Fernanda Morais**
-
--   **Role**: Backend Developer / Architect
--   **Focus**: Java, Spring Boot, Microservices, Cloud Native Applications
+3.  **Acesse a Documentação (Swagger):**
+    Após os logs indicarem que as aplicações iniciaram, acesse:
+    - **Swagger UI (Gateway)**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
 ---
-*This project is part of a technical evaluation.*
+
+## 4. Fluxo de Autenticação
+
+O sistema utiliza **JWT (JSON Web Token)** para segurança stateless.
+
+1.  O cliente envia `username` e `password` para o endpoint `/auth/login`.
+2.  A API 1 valida as credenciais (neste projeto, usuário mockado: `usuario` / `senha123`).
+3.  Se válido, retorna um token JWT assinado (HMAC SHA).
+4.  Para acessar os endpoints de pedidos (`/api/orders`), o cliente deve enviar o cabeçalho:
+    `Authorization: Bearer <seu_token_jwt>`
+5.  O Gateway valida o token antes de encaminhar a requisição para a API 2.
+
+---
+
+## 5. Endpoints da API
+
+Todos os exemplos abaixo consideram que a API 1 está rodando em `localhost:8080`.
+
+### 5.1 Autenticação
+
+#### **Login**
+Gera o token de acesso necessário para as demais operações.
+
+- **URL**: `POST /auth/login`
+- **Exemplo de Requisição (cURL):**
+  ```bash
+  curl -X POST http://localhost:8080/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"username": "usuario", "password": "senha123"}'
+  ```
+- **Exemplo de Resposta (200 OK):**
+  ```json
+  {
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c3VhcmlvIiwiaWF0Ijox..."
+  }
+  ```
+- **Cenário de Teste (Unitário):**
+  ```java
+  @Test
+  void login_quandoCredenciaisValidas_deveRetornar200Etoken() throws Exception {
+      String body = """
+              { "username": "usuario", "password": "senha123" }
+              """;
+      mockMvc.perform(post("/auth/login")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(body))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.token").isNotEmpty());
+  }
+  ```
+
+---
+
+### 5.2 Pedidos (Requer Token JWT)
+
+**Nota:** Substitua `<TOKEN>` pelo token obtido no login.
+
+#### **Criar Pedido**
+- **URL**: `POST /api/orders`
+- **Exemplo de Requisição (cURL):**
+  ```bash
+  curl -X POST http://localhost:8080/api/orders \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "customerName": "João Silva",
+      "customerEmail": "joao@email.com",
+      "items": [
+        {
+          "productName": "Notebook",
+          "quantity": 1,
+          "unitPrice": 3500.00
+        }
+      ]
+    }'
+  ```
+- **Exemplo de Resposta (201 Created):**
+  ```json
+  {
+    "id": 1,
+    "customerName": "João Silva",
+    "totalAmount": 3500.00,
+    "status": "PENDING",
+    "items": [...]
+  }
+  ```
+- **Cenário de Teste (Integração):**
+  ```java
+  @Test
+  void adicionar_deveRetornar201() throws Exception {
+      PedidoRequest req = pedidoRequestValido(); // Método auxiliar que cria objeto
+      when(pedidoService.create(any())).thenReturn(pedidoSalvo);
+
+      mockMvc.perform(post("/api/orders")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(objectMapper.writeValueAsString(req)))
+              .andExpect(status().isCreated())
+              .andExpect(jsonPath("$.id").exists());
+  }
+  ```
+
+#### **Listar Pedidos (Paginado)**
+- **URL**: `GET /api/orders?page=0&size=10`
+- **Exemplo de Requisição (cURL):**
+  ```bash
+  curl -X GET "http://localhost:8080/api/orders?page=0&size=10" \
+    -H "Authorization: Bearer <TOKEN>"
+  ```
+- **Exemplo de Resposta (200 OK):**
+  ```json
+  {
+    "content": [ ... ],
+    "pageable": { ... },
+    "totalElements": 1
+  }
+  ```
+
+#### **Buscar Pedido por ID**
+- **URL**: `GET /api/orders/{id}`
+- **Exemplo de Requisição (cURL):**
+  ```bash
+  curl -X GET http://localhost:8080/api/orders/1 \
+    -H "Authorization: Bearer <TOKEN>"
+  ```
+- **Cenário de Teste (Erro 404):**
+  ```java
+  @Test
+  void listarId_quandoNaoEncontrado_deveRetornar404() throws Exception {
+      when(pedidoService.getById(999L))
+          .thenThrow(new ResourceNotFoundException("Pedido não encontrado"));
+
+      mockMvc.perform(get("/api/orders/999"))
+              .andExpect(status().isNotFound());
+  }
+  ```
+
+#### **Atualizar Pedido**
+- **URL**: `PUT /api/orders/{id}`
+- **Exemplo de Requisição (cURL):**
+  ```bash
+  curl -X PUT http://localhost:8080/api/orders/1 \
+    -H "Authorization: Bearer <TOKEN>" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "customerName": "João Silva Editado",
+      "customerEmail": "joao.novo@email.com",
+      "status": "PAID"
+    }'
+  ```
+- **Resposta**: `204 No Content`
+
+#### **Deletar Pedido**
+- **URL**: `DELETE /api/orders/{id}`
+- **Exemplo de Requisição (cURL):**
+  ```bash
+  curl -X DELETE http://localhost:8080/api/orders/1 \
+    -H "Authorization: Bearer <TOKEN>"
+  ```
+- **Resposta**: `204 No Content`
+
+---
+
+## 6. Validação e Tratamento de Erros
+
+O projeto implementa um **Global Exception Handler** (`@ControllerAdvice`) que padroniza todas as respostas de erro.
+
+### Exemplos de Respostas de Erro
+
+**400 Bad Request (Validação de Campos):**
+Ocorre quando campos obrigatórios estão ausentes ou inválidos (ex: email mal formatado).
+```json
+{
+  "timestamp": "2025-02-18T10:00:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Erro de validação",
+  "path": "/api/orders"
+}
+```
+
+**401 Unauthorized (Token Inválido):**
+Ocorre quando o token JWT não é enviado, está expirado ou é inválido.
+```json
+{
+  "timestamp": "...",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Token inválido ou expirado",
+  "path": "/api/orders"
+}
+```
+
+**404 Not Found (Recurso Inexistente):**
+Ocorre ao tentar acessar um ID de pedido que não existe.
+```json
+{
+  "timestamp": "...",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Pedido não encontrado com id: 999",
+  "path": "/api/orders/999"
+}
+```
+
+**500 Internal Server Error:**
+Erro genérico para falhas inesperadas no servidor.
+
+---
+
+## 7. Estratégia de Testes
+
+O projeto possui uma cobertura de testes superior a 70%, focando em:
+
+1.  **Testes de Unidade (Service)**: Validam a lógica de negócios isoladamente, usando Mocks para o repositório.
+2.  **Testes de Integração (Controller)**: Validam a camada REST, serialização JSON, códigos HTTP e tratamento de exceções usando `MockMvc`.
+3.  **Testes de Segurança**: Garantem que endpoints protegidos rejeitem requisições sem token.
+
+Para executar os testes localmente:
+```bash
+./mvnw test
+```
+
+---
+
+## 8. Decisões Arquiteturais e Segurança
+
+- **Gateway Pattern**: A API 1 desacopla a autenticação da lógica de negócios. Isso permite evoluir a segurança sem impactar o serviço de pedidos e facilita a inclusão de novos microsserviços no futuro.
+- **Stateless Authentication**: O uso de JWT elimina a necessidade de sincronização de sessão (Session Replication) entre instâncias, favorecendo a escalabilidade horizontal.
+- **Tratamento de Erros Centralizado**: Garante que o cliente da API sempre receba um formato de erro consistente, independentemente da origem do problema (validação, banco de dados ou lógica).
+- **Docker Multi-stage Build**: As imagens Docker são construídas em etapas, resultando em imagens finais leves (apenas JRE) e seguras, sem o código fonte ou ferramentas de build (Maven) no ambiente de produção.
+
+### Melhorias Futuras (Escalabilidade)
+- **Service Discovery (Eureka/Consul)**: Para que o Gateway encontre a API 2 dinamicamente, sem URL fixa.
+- **Circuit Breaker (Resilience4j)**: Para proteger o Gateway caso a API 2 fique indisponível.
+- **Cache Distribuído (Redis)**: Para armazenar tokens revogados (blacklist) ou cachear consultas de pedidos frequentes.
